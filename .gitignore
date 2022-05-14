@@ -1,0 +1,11 @@
+/model_zoo
+/venv
+/testsets
+/trainsets
+/figs
+/data
+/results
+conda
+/kernels
+/SR
+/.idea
