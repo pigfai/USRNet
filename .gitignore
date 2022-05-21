@@ -3,7 +3,6 @@
 /testsets
 /trainsets
 /figs
-/data
 /results
 conda
 /kernels
@@ -11,3 +10,4 @@ conda
 /.idea
 /options/swinir
 /options/vrt
+__pycache__

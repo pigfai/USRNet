@@ -17,7 +17,7 @@ from utils import utils_sisr as sr
 from utils import utils_image as util
 
 # from models.network_usrnet import USRNet as net   # for pytorch version <= 1.7.1
-from models.network_usrnet_v1 import USRNet as net  # for pytorch version >= 1.8.1
+from models.network_usrnet import USRNet as net  # for pytorch version >= 1.8.1 v1版本 主要是修改rfft
 
 '''
 Spyder (Python 3.7)

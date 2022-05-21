@@ -19,7 +19,7 @@
       , "scales": [1, 2, 3, 4]
       , "dataloader_shuffle": true
       , "dataloader_num_workers": 8
-      , "dataloader_batch_size": 48
+      , "dataloader_batch_size":  8 //48
     }
     , "test": {
       "name": "test_dataset"
@@ -31,7 +31,7 @@
 
   , "path": {
     "root": "SR"
-    , "pretrained_netG": "./model_zoo/usrnet.pth"
+    , "pretrained_netG": "./model_zoo/usrnet_tiny.pth"
   }
 
   , "netG": {
@@ -70,8 +70,8 @@
     , "G_regularizer_orthstep": null
     , "G_regularizer_clipstep": null
 
-    , "checkpoint_test": 5000
-    , "checkpoint_save": 5000
-    , "checkpoint_print": 200
+    , "checkpoint_test": 2 //5000
+    , "checkpoint_save": 2 //5000
+    , "checkpoint_print": 2 //200
   }
 }
