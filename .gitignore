@@ -9,3 +9,5 @@ conda
 /.idea
 /options/swinir
 /options/vrt
+/models
+/utils/__pycache__
