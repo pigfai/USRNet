@@ -64,11 +64,11 @@ def main():
     # ----------------------------------------
     # Preparation
     # ----------------------------------------
-    model_name = 'usrnet_tiny'      # 'usrgan' | 'usrnet' | 'usrgan_tiny' | 'usrnet_tiny'
+    model_name = 'usrnet'      # 'usrgan' | 'usrnet' | 'usrgan_tiny' | 'usrnet_tiny'
     testset_name = 'image_samples'  # test set,  'set_real'
     test_image_list = os.listdir('./testsets/' + testset_name)
 
-    for test_image in test_image_list[:2]:
+    for test_image in test_image_list:
         torch.cuda.empty_cache()
         sf = 4                     # scale factor, only from {1, 2, 3, 4}
         show_img = False           # default: False
