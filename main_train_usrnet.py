@@ -42,7 +42,7 @@ def main(json_path='options/train_usrnet.json'):
 
     '''
     # ----------------------------------------
-    # Step--1 (prepare opt)
+    # Step--1 (prepare opt) 参数设置
     # ----------------------------------------
     '''
 

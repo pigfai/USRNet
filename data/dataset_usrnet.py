@@ -16,8 +16,8 @@ from scipy.io import loadmat
 class DatasetUSRNet(data.Dataset):
     '''
     # -----------------------------------------
-    # Get L/k/sf/sigma for USRNet.
-    # Only "paths_H" and kernel is needed, synthesize L on-the-fly.
+    # Get L/k/sf/sigma for USRNet. 提供参数
+    # Only "paths_H" and kernel is needed, synthesize L on-the-fly.  需要高分辨率图像以及模糊核
     # -----------------------------------------
     '''
     def __init__(self, opt):
@@ -59,7 +59,7 @@ class DatasetUSRNet(data.Dataset):
             H, W, _ = img_H.shape
 
             # ----------------------------
-            # randomly crop the patch
+            # randomly crop the patch 随机剪切
             # ----------------------------
             rnd_h = random.randint(0, max(0, H - self.patch_size))
             rnd_w = random.randint(0, max(0, W - self.patch_size))
@@ -72,7 +72,7 @@ class DatasetUSRNet(data.Dataset):
             patch_H = util.augment_img(patch_H, mode=mode)
 
             # ---------------------------
-            # 2) kernel
+            # 2) kernel 模糊核
             # ---------------------------
             r_value = random.randint(0, 7)
             if r_value>3:
@@ -84,20 +84,25 @@ class DatasetUSRNet(data.Dataset):
                 k = util.augment_img(k, mode=mode_k)
 
             # ---------------------------
-            # 3) noise level
+            # 3) noise level 噪声
             # ---------------------------
             if random.randint(0, 8) == 1:
                 noise_level = 0/255.0
             else:
                 noise_level = np.random.randint(0, self.sigma_max)/255.0
-
+            # 设定sar的视数L
+            L = 5
             # ---------------------------
             # Low-quality image
             # ---------------------------
-            img_L = ndimage.filters.convolve(patch_H, np.expand_dims(k, axis=2), mode='wrap')
-            img_L = img_L[0::self.sf, 0::self.sf, ...]
-            # add Gaussian noise
-            img_L = util.uint2single(img_L) + np.random.normal(0, noise_level, img_L.shape)
+            img_L = ndimage.filters.convolve(patch_H, np.expand_dims(k, axis=2), mode='wrap') # 和模糊核进行卷积
+            img_L = img_L[0::self.sf, 0::self.sf, ...]      # 每隔sf取一个
+            # add Gaussian noise 添加高斯噪声 正态分布
+            # img_L = util.uint2single(img_L) + np.random.normal(0, noise_level, img_L.shape)
+            # 取对数，添加加性gamma噪声
+            img_L = np.log(img_L)
+            N = np.log(np.random.gamma(L, 1/L, img_L.shape))
+            img_L = np.exp(img_L + N)
             img_H = patch_H
 
         else:
@@ -118,7 +123,7 @@ class DatasetUSRNet(data.Dataset):
 
         k = util.single2tensor3(np.expand_dims(np.float32(k), axis=2))
         img_H, img_L = util.uint2tensor3(img_H), util.single2tensor3(img_L)
-        noise_level = torch.FloatTensor([noise_level]).view([1,1,1])
+        noise_level = torch.FloatTensor([noise_level]).view([1,1,1])   #
 
         return {'L': img_L, 'H': img_H, 'k': k, 'sigma': noise_level, 'sf': self.sf, 'L_path': L_path, 'H_path': H_path}
 
