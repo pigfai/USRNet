@@ -262,10 +262,17 @@ class USRNet(nn.Module):
 
         ab = self.h(torch.cat((sigma, torch.tensor(sf).type_as(sigma).expand_as(sigma)), dim=1))
 
+
         # unfolding
         for i in range(self.n):
             
             x = self.d(x, FB, FBC, F2B, FBFy, ab[:, i:i+1, ...], sf)
             x = self.p(torch.cat((x, ab[:, i+self.n:i+self.n+1, ...].repeat(1, 1, x.size(2), x.size(3))), dim=1))
-
+        # 返回正常的x
+        x = np.exp(x)
         return x
+
+
+
+
+

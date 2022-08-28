@@ -90,8 +90,6 @@ class DatasetUSRNet(data.Dataset):
                 noise_level = 0/255.0
             else:
                 noise_level = np.random.randint(0, self.sigma_max)/255.0
-            # 设定sar的视数L
-            L = 5
             # ---------------------------
             # Low-quality image
             # ---------------------------
@@ -99,11 +97,9 @@ class DatasetUSRNet(data.Dataset):
             img_L = img_L[0::self.sf, 0::self.sf, ...]      # 每隔sf取一个
             # add Gaussian noise 添加高斯噪声 正态分布
             # img_L = util.uint2single(img_L) + np.random.normal(0, noise_level, img_L.shape)
-            # 取对数，添加加性gamma噪声
-            img_L = np.log(img_L)
-            N = np.log(np.random.gamma(L, 1/L, img_L.shape))
-            img_L = np.exp(img_L + N)
-            img_H = patch_H
+            # img_H = patch_H
+            img_L = np.log(util.uint2single(img_L)) + np.log(np.random.normal(0, noise_level, img_L.shape))
+            img_H = np.log(patch_H)  # 添加了log
 
         else:
 
@@ -118,7 +114,10 @@ class DatasetUSRNet(data.Dataset):
 
             img_L = ndimage.filters.convolve(img_H, np.expand_dims(k, axis=2), mode='wrap')  # blur
             img_L = img_L[0::self.sf_validation, 0::self.sf_validation, ...]  # downsampling
-            img_L = util.uint2single(img_L) + np.random.normal(0, noise_level, img_L.shape)
+            # img_L = util.uint2single(img_L) + np.random.normal(0, noise_level, img_L.shape)
+            # 添加修改log
+            img_L = np.log(util.uint2single(img_L)) + np.log(np.random.normal(0, noise_level, img_L.shape))
+            img_H = np.log(img_H)
             self.sf = self.sf_validation
 
         k = util.single2tensor3(np.expand_dims(np.float32(k), axis=2))

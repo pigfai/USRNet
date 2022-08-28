@@ -58,7 +58,6 @@ testing code of USRNet for the Table 1 in the paper
 """
 
 
-
 def main():
 
     # ----------------------------------------
