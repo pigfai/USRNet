@@ -11,3 +11,4 @@ conda
 /options/vrt
 /models
 /utils/__pycache__
+/data/__pycache__
