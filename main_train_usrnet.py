@@ -56,7 +56,7 @@ def main(json_path='options/train_usrnet.json'):
     # update opt
     # ----------------------------------------
     # -->-->-->-->-->-->-->-->-->-->-->-->-->-
-    init_iter, init_path_G = option.find_last_checkpoint(opt['path']['models'], net_type='G')  # 如果需要预训练添加参数pretrained_path=""
+    init_iter, init_path_G = option.find_last_checkpoint(opt['path']['models'], net_type='G', pretrained_path=None)  # 如果需要预训练添加参数pretrained_path=""
     opt['path']['pretrained_netG'] = init_path_G
     current_step = init_iter
 
