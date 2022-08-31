@@ -149,7 +149,7 @@ def main(json_path='options/train_usrnet.json'):
             # -------------------------------
             # 1) update learning rate
             # -------------------------------
-            model.update_learning_rate(current_step)
+            # model.update_learning_rate(current_step)
 
             # -------------------------------
             # 2) feed patch pairs
@@ -160,6 +160,9 @@ def main(json_path='options/train_usrnet.json'):
             # 3) optimize parameters
             # -------------------------------
             model.optimize_parameters(current_step)
+
+            # update learning rate 放在optimize之后
+            model.update_learning_rate(current_step)
 
             # -------------------------------
             # 4) training information
