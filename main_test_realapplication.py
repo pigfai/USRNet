@@ -198,7 +198,6 @@ def main():
         img_I[:k_v.shape[0], :k_v.shape[1], :] = k_v
         util.imshow(np.concatenate([img_I, img_E], axis=1), title='LR / Recovered') if show_img else None
         util.imsave(np.concatenate([img_I, img_E], axis=1), os.path.join(E_path, img_name+'_x'+str(sf)+'_'+model_name+'_LE.png'))
->>>>>>> Stashed changes
 
 
 if __name__ == '__main__':

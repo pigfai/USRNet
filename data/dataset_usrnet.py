@@ -96,10 +96,10 @@ class DatasetUSRNet(data.Dataset):
             img_L = ndimage.filters.convolve(patch_H, np.expand_dims(k, axis=2), mode='wrap') # 和模糊核进行卷积
             img_L = img_L[0::self.sf, 0::self.sf, ...]      # 每隔sf取一个
             # add Gaussian noise 添加高斯噪声 正态分布
-            # img_L = util.uint2single(img_L) + np.random.normal(0, noise_level, img_L.shape)
-            # img_H = patch_H
-            img_L = np.log(util.uint2single(img_L)) + np.log(np.random.normal(0, noise_level, img_L.shape))
-            img_H = np.log(patch_H)  # 添加了log
+            #img_L = util.uint2single(img_L) + np.random.normal(0, noise_level, img_L.shape)
+            #img_H = patch_H
+            img_L = np.log(util.uint2single(img_L)+1e-7) + np.random.normal(0, noise_level, img_L.shape)
+            img_H = np.log(patch_H+1e-7)  # 添加了log
 
         else:
 
@@ -116,8 +116,8 @@ class DatasetUSRNet(data.Dataset):
             img_L = img_L[0::self.sf_validation, 0::self.sf_validation, ...]  # downsampling
             # img_L = util.uint2single(img_L) + np.random.normal(0, noise_level, img_L.shape)
             # 添加修改log
-            img_L = np.log(util.uint2single(img_L)) + np.log(np.random.normal(0, noise_level, img_L.shape))
-            img_H = np.log(img_H)
+            img_L = np.log(util.uint2single(img_L)+1e-7) + np.random.normal(0, noise_level, img_L.shape)
+            img_H = np.log(img_H+1e-7)
             self.sf = self.sf_validation
 
         k = util.single2tensor3(np.expand_dims(np.float32(k), axis=2))

@@ -56,7 +56,7 @@ def main(json_path='options/train_usrnet.json'):
     # update opt
     # ----------------------------------------
     # -->-->-->-->-->-->-->-->-->-->-->-->-->-
-    init_iter, init_path_G = option.find_last_checkpoint(opt['path']['models'], net_type='G', pretrained_path="./model_zoo/usrnet_tiny.pth")
+    init_iter, init_path_G = option.find_last_checkpoint(opt['path']['models'], net_type='G')  # 如果需要预训练添加参数pretrained_path=""
     opt['path']['pretrained_netG'] = init_path_G
     current_step = init_iter
 
@@ -141,7 +141,7 @@ def main(json_path='options/train_usrnet.json'):
     # ----------------------------------------
     '''
 
-    for epoch in range(100000):  # keep running
+    for epoch in range(10000):  # keep running  10 0000
         for i, train_data in enumerate(train_loader):
 
             current_step += 1
