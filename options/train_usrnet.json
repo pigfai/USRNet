@@ -18,8 +18,8 @@
       , "use_rot": true
       , "scales": [1, 2, 3, 4]
       , "dataloader_shuffle": true
-      , "dataloader_num_workers": 4 //8
-      , "dataloader_batch_size":  4 //48
+      , "dataloader_num_workers": 8 //8
+      , "dataloader_batch_size":  48 //48
     }
     , "test": {
       "name": "test_dataset"
