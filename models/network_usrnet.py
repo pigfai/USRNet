@@ -5,7 +5,6 @@ import numpy as np
 from utils import utils_image as util
 import torch.fft
 
-
 # for pytorch version >= 1.8.1
 
 
@@ -21,7 +20,6 @@ import torch.fft
 }
 # --------------------------------------------
 """
-
 
 """
 # --------------------------------------------
@@ -40,8 +38,8 @@ def splits(a, sf):
     Returns:
         b: NxCx(W/sf)x(H/sf)x(sf^2)
     '''
-    b = torch.stack(torch.chunk(a, sf, dim=2), dim=4) # 按sf的个数在dim2上切分，再根据dim4进行堆叠
-    b = torch.cat(torch.chunk(b, sf, dim=3), dim=4) # 按sf的个数在dim3上切分，再根据dim4进行连接
+    b = torch.stack(torch.chunk(a, sf, dim=2), dim=4)
+    b = torch.cat(torch.chunk(b, sf, dim=3), dim=4)
     return b
 
 
@@ -60,31 +58,31 @@ def p2o(psf, shape):
         otf: NxCxHxWx2
     '''
     otf = torch.zeros(psf.shape[:-2] + shape).type_as(psf)
-    otf[...,:psf.shape[2],:psf.shape[3]].copy_(psf)
+    otf[..., :psf.shape[2], :psf.shape[3]].copy_(psf)
     for axis, axis_size in enumerate(psf.shape[2:]):
-        otf = torch.roll(otf, -int(axis_size / 2), dims=axis+2)
-    otf = torch.fft.fftn(otf, dim=(-2,-1))
-    #n_ops = torch.sum(torch.tensor(psf.shape).type_as(psf) * torch.log2(torch.tensor(psf.shape).type_as(psf)))
-    #otf[..., 1][torch.abs(otf[..., 1]) < n_ops*2.22e-16] = torch.tensor(0).type_as(psf)
+        otf = torch.roll(otf, -int(axis_size / 2), dims=axis + 2)
+    otf = torch.fft.fftn(otf, dim=(-2, -1))
+    # n_ops = torch.sum(torch.tensor(psf.shape).type_as(psf) * torch.log2(torch.tensor(psf.shape).type_as(psf)))
+    # otf[..., 1][torch.abs(otf[..., 1]) < n_ops*2.22e-16] = torch.tensor(0).type_as(psf)
     return otf
 
 
 def upsample(x, sf=3):
     '''s-fold upsampler
-    上采样，0填充
+
     Upsampling the spatial size by filling the new entries with zeros
 
     x: tensor image, NxCxWxH
     '''
     st = 0
-    z = torch.zeros((x.shape[0], x.shape[1], x.shape[2]*sf, x.shape[3]*sf)).type_as(x)
+    z = torch.zeros((x.shape[0], x.shape[1], x.shape[2] * sf, x.shape[3] * sf)).type_as(x)
     z[..., st::sf, st::sf].copy_(x)
     return z
 
 
 def downsample(x, sf=3):
     '''s-fold downsampler
-    下采样 保留左上sfxsf
+
     Keeping the upper-left pixel for each distinct sfxsf patch and discarding the others
 
     x: tensor image, NxCxWxH
@@ -100,19 +98,20 @@ def downsample_np(x, sf=3):
 
 """
 # --------------------------------------------
-# (1) Prior module; ResUNet: act as a non-blind denoiser 非盲降噪器
+# (1) Prior module; ResUNet: act as a non-blind denoiser
 # x_k = P(z_k, beta_k)
 # --------------------------------------------
 """
 
 
 class ResUNet(nn.Module):
-    def __init__(self, in_nc=4, out_nc=3, nc=[64, 128, 256, 512], nb=2, act_mode='R', downsample_mode='strideconv', upsample_mode='convtranspose'):
+    def __init__(self, in_nc=4, out_nc=3, nc=[64, 128, 256, 512], nb=2, act_mode='R', downsample_mode='strideconv',
+                 upsample_mode='convtranspose'):
         super(ResUNet, self).__init__()
-        # nc是设置中4层scale的通道数64 128 256 512
+
         self.m_head = B.conv(in_nc, nc[0], bias=False, mode='C')
 
-        # downsample 下采样的选择 默认strideconv
+        # downsample
         if downsample_mode == 'avgpool':
             downsample_block = B.downsample_avgpool
         elif downsample_mode == 'maxpool':
@@ -122,14 +121,20 @@ class ResUNet(nn.Module):
         else:
             raise NotImplementedError('downsample mode [{:s}] is not found'.format(downsample_mode))
 
-        # 下采样 1,2,3 连接层
-        self.m_down1 = B.sequential(*[B.ResBlock(nc[0], nc[0], bias=False, mode='C'+act_mode+'C') for _ in range(nb)], downsample_block(nc[0], nc[1], bias=False, mode='2'))
-        self.m_down2 = B.sequential(*[B.ResBlock(nc[1], nc[1], bias=False, mode='C'+act_mode+'C') for _ in range(nb)], downsample_block(nc[1], nc[2], bias=False, mode='2'))
-        self.m_down3 = B.sequential(*[B.ResBlock(nc[2], nc[2], bias=False, mode='C'+act_mode+'C') for _ in range(nb)], downsample_block(nc[2], nc[3], bias=False, mode='2'))
+        self.m_down1 = B.sequential(
+            *[B.ResBlock(nc[0], nc[0], bias=False, mode='C' + act_mode + 'C') for _ in range(nb)],
+            downsample_block(nc[0], nc[1], bias=False, mode='2'))
+        self.m_down2 = B.sequential(
+            *[B.ResBlock(nc[1], nc[1], bias=False, mode='C' + act_mode + 'C') for _ in range(nb)],
+            downsample_block(nc[1], nc[2], bias=False, mode='2'))
+        self.m_down3 = B.sequential(
+            *[B.ResBlock(nc[2], nc[2], bias=False, mode='C' + act_mode + 'C') for _ in range(nb)],
+            downsample_block(nc[2], nc[3], bias=False, mode='2'))
 
-        self.m_body  = B.sequential(*[B.ResBlock(nc[3], nc[3], bias=False, mode='C'+act_mode+'C') for _ in range(nb)])
+        self.m_body = B.sequential(
+            *[B.ResBlock(nc[3], nc[3], bias=False, mode='C' + act_mode + 'C') for _ in range(nb)])
 
-        # upsample 上采样的选择 默认convtranspose
+        # upsample
         if upsample_mode == 'upconv':
             upsample_block = B.upsample_upconv
         elif upsample_mode == 'pixelshuffle':
@@ -139,19 +144,20 @@ class ResUNet(nn.Module):
         else:
             raise NotImplementedError('upsample mode [{:s}] is not found'.format(upsample_mode))
 
-        self.m_up3 = B.sequential(upsample_block(nc[3], nc[2], bias=False, mode='2'), *[B.ResBlock(nc[2], nc[2], bias=False, mode='C'+act_mode+'C') for _ in range(nb)])
-        self.m_up2 = B.sequential(upsample_block(nc[2], nc[1], bias=False, mode='2'), *[B.ResBlock(nc[1], nc[1], bias=False, mode='C'+act_mode+'C') for _ in range(nb)])
-        self.m_up1 = B.sequential(upsample_block(nc[1], nc[0], bias=False, mode='2'), *[B.ResBlock(nc[0], nc[0], bias=False, mode='C'+act_mode+'C') for _ in range(nb)])
+        self.m_up3 = B.sequential(upsample_block(nc[3], nc[2], bias=False, mode='2'),
+                                  *[B.ResBlock(nc[2], nc[2], bias=False, mode='C' + act_mode + 'C') for _ in range(nb)])
+        self.m_up2 = B.sequential(upsample_block(nc[2], nc[1], bias=False, mode='2'),
+                                  *[B.ResBlock(nc[1], nc[1], bias=False, mode='C' + act_mode + 'C') for _ in range(nb)])
+        self.m_up1 = B.sequential(upsample_block(nc[1], nc[0], bias=False, mode='2'),
+                                  *[B.ResBlock(nc[0], nc[0], bias=False, mode='C' + act_mode + 'C') for _ in range(nb)])
 
         self.m_tail = B.conv(nc[0], out_nc, bias=False, mode='C')
 
     def forward(self, x):
-        
+
         h, w = x.size()[-2:]
-        # np.ceil向上取整
-        paddingBottom = int(np.ceil(h/8)*8-h)
-        paddingRight = int(np.ceil(w/8)*8-w)
-        # 使用输入边界的复制对输入张量进行填充
+        paddingBottom = int(np.ceil(h / 8) * 8 - h)
+        paddingRight = int(np.ceil(w / 8) * 8 - w)
         x = nn.ReplicationPad2d((0, paddingRight, 0, paddingBottom))(x)
 
         x1 = self.m_head(x)
@@ -159,10 +165,10 @@ class ResUNet(nn.Module):
         x3 = self.m_down2(x2)
         x4 = self.m_down3(x3)
         x = self.m_body(x4)
-        x = self.m_up3(x+x4)
-        x = self.m_up2(x+x3)
-        x = self.m_up1(x+x2)
-        x = self.m_tail(x+x1)
+        x = self.m_up3(x + x4)
+        x = self.m_up2(x + x3)
+        x = self.m_up1(x + x2)
+        x = self.m_tail(x + x1)
 
         x = x[..., :h, :w]
 
@@ -171,10 +177,10 @@ class ResUNet(nn.Module):
 
 """
 # --------------------------------------------
-# (2) Data module, closed-form solution  闭合的解
-# It is a trainable-parameter-free module  ^_^  无可训练参数
+# (2) Data module, closed-form solution
+# It is a trainable-parameter-free module  ^_^
 # z_k = D(x_{k-1}, s, k, y, alpha_k)
-# some can be pre-calculated  预计算
+# some can be pre-calculated
 # --------------------------------------------
 """
 
@@ -184,15 +190,14 @@ class DataNet(nn.Module):
         super(DataNet, self).__init__()
 
     def forward(self, x, FB, FBC, F2B, FBFy, alpha, sf):
-
-        FR = FBFy + torch.fft.fftn(alpha*x, dim=(-2,-1))
+        FR = FBFy + torch.fft.fftn(alpha * x, dim=(-2, -1))
         x1 = FB.mul(FR)
         FBR = torch.mean(splits(x1, sf), dim=-1, keepdim=False)
         invW = torch.mean(splits(F2B, sf), dim=-1, keepdim=False)
         invWBR = FBR.div(invW + alpha)
-        FCBinvWBR = FBC*invWBR.repeat(1, 1, sf, sf)
-        FX = (FR-FCBinvWBR)/alpha
-        Xest = torch.real(torch.fft.ifftn(FX, dim=(-2,-1)))
+        FCBinvWBR = FBC * invWBR.repeat(1, 1, sf, sf)
+        FX = (FR - FCBinvWBR) / alpha
+        Xest = torch.real(torch.fft.ifftn(FX, dim=(-2, -1)))
 
         return Xest
 
@@ -208,17 +213,15 @@ class HyPaNet(nn.Module):
     def __init__(self, in_nc=2, out_nc=8, channel=64):
         super(HyPaNet, self).__init__()
         self.mlp = nn.Sequential(
-                nn.Conv2d(in_nc, channel, 1, padding=0, bias=True),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(channel, channel, 1, padding=0, bias=True),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(channel, out_nc, 1, padding=0, bias=True),
-                nn.Softplus())
-        # 3个全连接层 前2个ReLu 最后softplus  每层隐藏结点数64
+            nn.Conv2d(in_nc, channel, 1, padding=0, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channel, channel, 1, padding=0, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channel, out_nc, 1, padding=0, bias=True),
+            nn.Softplus())
 
     def forward(self, x):
         x = self.mlp(x) + 1e-6
-        # 因为αk和βk必须是正数，要避免等式7中除以的αk过小 所以额外添加1e-6
         return x
 
 
@@ -231,47 +234,44 @@ class HyPaNet(nn.Module):
 
 
 class USRNet(nn.Module):
-    def __init__(self, n_iter=8, h_nc=64, in_nc=4, out_nc=3, nc=[64, 128, 256, 512], nb=2, act_mode='R', downsample_mode='strideconv', upsample_mode='convtranspose'):
+    def __init__(self, n_iter=8, h_nc=64, in_nc=4, out_nc=3, nc=[64, 128, 256, 512], nb=2, act_mode='R',
+                 downsample_mode='strideconv', upsample_mode='convtranspose'):
         super(USRNet, self).__init__()
 
         self.d = DataNet()
-        self.p = ResUNet(in_nc=in_nc, out_nc=out_nc, nc=nc, nb=nb, act_mode=act_mode, downsample_mode=downsample_mode, upsample_mode=upsample_mode)
-        self.h = HyPaNet(in_nc=2, out_nc=n_iter*2, channel=h_nc)
+        self.p = ResUNet(in_nc=in_nc, out_nc=out_nc, nc=nc, nb=nb, act_mode=act_mode, downsample_mode=downsample_mode,
+                         upsample_mode=upsample_mode)
+        self.h = HyPaNet(in_nc=2, out_nc=n_iter * 2, channel=h_nc)
         self.n = n_iter
 
     def forward(self, x, k, sf, sigma):
         '''
-        x: tensor, NxCxWxH      图像
-        k: tensor, Nx(1,3)xwxh  模糊核
-        sf: integer, 1   比例因子
-        sigma: tensor, Nx1x1x1 噪声水平
+        x: tensor, NxCxWxH
+        k: tensor, Nx(1,3)xwxh
+        sf: integer, 1
+        sigma: tensor, Nx1x1x1
         '''
 
         # initialization & pre-calculation
         w, h = x.shape[-2:]
-        FB = p2o(k, (w*sf, h*sf))
+        FB = p2o(k, (w * sf, h * sf))
         FBC = torch.conj(FB)
         F2B = torch.pow(torch.abs(FB), 2)
         STy = upsample(x, sf=sf)
-        FBFy = FBC*torch.fft.fftn(STy, dim=(-2,-1))
+        FBFy = FBC * torch.fft.fftn(STy, dim=(-2, -1))
         x = nn.functional.interpolate(x, scale_factor=sf, mode='nearest')
 
-        # hyper-parameter, alpha & beta  超参数α和β
-        # 将比例因子类型转换到和sigma一样的Nx1x1x1   再按第二列连接
-        # 根据αk和βk的定义，αk由σ和μk确定 βk取决于λ和μk。
-
+        # hyper-parameter, alpha & beta
         ab = self.h(torch.cat((sigma, torch.tensor(sf).type_as(sigma).expand_as(sigma)), dim=1))
-
 
         # unfolding
         for i in range(self.n):
-            
-            x = self.d(x, FB, FBC, F2B, FBFy, ab[:, i:i+1, ...], sf)
-            x = self.p(torch.cat((x, ab[:, i+self.n:i+self.n+1, ...].repeat(1, 1, x.size(2), x.size(3))), dim=1))
-        # 返回正常的x
-        x = torch.exp(x)
-        return x
+            x = self.d(x, FB, FBC, F2B, FBFy, ab[:, i:i + 1, ...], sf)
+            x = self.p(torch.cat((x, ab[:, i + self.n:i + self.n + 1, ...].repeat(1, 1, x.size(2), x.size(3))), dim=1))
 
+        x = torch.exp(x)
+
+        return x
 
 
 
