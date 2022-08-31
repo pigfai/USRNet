@@ -141,7 +141,7 @@ def main(json_path='options/train_usrnet.json'):
     # ----------------------------------------
     '''
 
-    for epoch in range(10000):  # keep running  10 0000
+    for epoch in range(100000):  # keep running  10 0000
         for i, train_data in enumerate(train_loader):
 
             current_step += 1
